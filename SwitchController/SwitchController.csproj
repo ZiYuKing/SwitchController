@@ -14,7 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
     <PackageReference Include="NLog" Version="5.0.0" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
   </ItemGroup>
 
   <ItemGroup>

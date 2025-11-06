@@ -14,8 +14,8 @@
     <Setting Name="StreamMode" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
-    <Setting Name="TargetFps" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+    <Setting Name="RtspCache" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">150</Value>
     </Setting>
     <Setting Name="PreviewSecs" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
@@ -26,11 +26,11 @@
     <Setting Name="SendIntervalMs" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="AutoConnect" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
     <Setting Name="ThemeName" Type="System.String" Scope="User">
       <Value Profile="(Default)">Dark</Value>
+    </Setting>
+    <Setting Name="RtspPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">6666</Value>
     </Setting>
   </Settings>
 </SettingsFile>

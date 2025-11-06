@@ -73,13 +73,13 @@ namespace SwitchController.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int TargetFps {
+        [global::System.Configuration.DefaultSettingValueAttribute("150")]
+        public int RtspCache {
             get {
-                return ((int)(this["TargetFps"]));
+                return ((int)(this["RtspCache"]));
             }
             set {
-                this["TargetFps"] = value;
+                this["RtspCache"] = value;
             }
         }
         
@@ -121,18 +121,6 @@ namespace SwitchController.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool AutoConnect {
-            get {
-                return ((bool)(this["AutoConnect"]));
-            }
-            set {
-                this["AutoConnect"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Dark")]
         public string ThemeName {
             get {
@@ -140,6 +128,18 @@ namespace SwitchController.Properties {
             }
             set {
                 this["ThemeName"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("6666")]
+        public int RtspPort {
+            get {
+                return ((int)(this["RtspPort"]));
+            }
+            set {
+                this["RtspPort"] = value;
             }
         }
     }

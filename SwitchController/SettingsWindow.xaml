@@ -225,6 +225,11 @@
                             <TextBox x:Name="tbPort" Width="120" Style="{StaticResource TextInput}" ToolTip="例如 6000"/>
                         </StackPanel>
 
+                        <StackPanel Orientation="Horizontal" Margin="0,6">
+                            <TextBlock Text="RTSP端口" Width="90" Style="{StaticResource FormLabel}"/>
+                            <TextBox x:Name="rtspPort" Width="120" Style="{StaticResource TextInput}" ToolTip="例如 6666"/>
+                        </StackPanel>
+
                         <Separator Margin="0,10,0,10" Background="{StaticResource BrushStroke}" Height="1"/>
 
                         <TextBlock Text="画面" Style="{StaticResource GroupTitle}"/>
@@ -233,12 +238,13 @@
                             <ComboBox x:Name="cbStreamMode" Width="180">
                                 <ComboBoxItem Content="持续拉流"/>
                                 <ComboBoxItem Content="操作预览"/>
+                                <ComboBoxItem Content="RTSP播放(需要Sys-DVR打开RYSP模式)"/>
                                 <ComboBoxItem Content="关闭预览"/>
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,6">
-                            <TextBlock Text="FPS" Width="90" Style="{StaticResource FormLabel}"/>
-                            <TextBox x:Name="tbFps" Width="120" Style="{StaticResource TextInput}" ToolTip="建议 15~30"/>
+                            <TextBlock Text="RTSP缓冲(ms)" Width="90" Style="{StaticResource FormLabel}"/>
+                            <TextBox x:Name="tbCache" Width="120" Style="{StaticResource TextInput}" ToolTip="局域网建议 150~300"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,6">
                             <TextBlock Text="预览时长(s)" Width="90" Style="{StaticResource FormLabel}"/>
@@ -260,7 +266,7 @@
                         <Separator Margin="0,10,0,10" Background="{StaticResource BrushStroke}" Height="1"/>
 
                         <TextBlock Text="其他" Style="{StaticResource GroupTitle}"/>
-                        <CheckBox x:Name="chkAutoConnect" Style="{StaticResource CheckOption}" Content="启动后自动连接" Foreground="{StaticResource BrushText}" />
+                        <!--<CheckBox x:Name="chkAutoConnect" Style="{StaticResource CheckOption}" Content="启动后自动连接" Foreground="{StaticResource BrushText}" />-->
                         <StackPanel Orientation="Horizontal" Margin="0,6">
                             <TextBlock Text="主题" Width="30" Style="{StaticResource FormLabel}"/>
                             <ComboBox x:Name="cbTheme" Width="180">

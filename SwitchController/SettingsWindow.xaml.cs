@@ -22,17 +22,17 @@ public partial class SettingsWindow : Window
 
         tbIp.Text = s.SwitchIP ?? "192.168.0.0";
         tbPort.Text = s.SwitchPort > 0 ? s.SwitchPort.ToString() : "6000";
+        rtspPort.Text = s.RtspPort > 0 ? s.RtspPort.ToString() : "6666";
 
-        // 拉流模式：0=持续拉流  1=操作预览  2=关闭预览
-        cbStreamMode.SelectedIndex = Math.Clamp(s.StreamMode, 0, 2);
+        // 拉流模式：0=持续拉流  1=操作预览  2=RTSP播放  3=关闭预览
+        cbStreamMode.SelectedIndex = Math.Clamp(s.StreamMode, 0, 3);
 
-        tbFps.Text = (s.TargetFps > 0 ? s.TargetFps : 20).ToString();
+        tbCache.Text = (s.RtspCache > 0 ? s.RtspCache : 20).ToString();
         tbPreviewSecs.Text = (s.PreviewSecs > 0 ? s.PreviewSecs : 2).ToString();
 
         tbDeadZone.Text = (s.DeadZonePx > 0 ? s.DeadZonePx : 8).ToString();
         tbSendInterval.Text = (s.SendIntervalMs > 0 ? s.SendIntervalMs : 15).ToString();
 
-        chkAutoConnect.IsChecked = s.AutoConnect;
         // 主题：0=深色  1=浅色  2=传说Z-A限定
         cbTheme.SelectedIndex = s.ThemeName == "Dark" ? 0 : s.ThemeName == "Light" ? 1 : s.ThemeName == "ZA" ? 2 : 2;
 
@@ -42,6 +42,7 @@ public partial class SettingsWindow : Window
     {
         var ip = tbIp.Text.Trim();
         var port = tbPort.Text.Trim();
+        var rtspPort = this.rtspPort.Text.Trim();
 
         // 简单校验
         if (!Regex.IsMatch(ip, @"^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$"))
@@ -54,42 +55,45 @@ public partial class SettingsWindow : Window
             MessageBox.Show("端口必须是 1~65535 的整数。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
+        if (!int.TryParse(rtspPort, out int rp) || rp <= 0 || rp > 65535)
+        {
+            MessageBox.Show("RTSP端口必须是 1~65535 的整数。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
 
         // 新值
         int mode = cbStreamMode.SelectedIndex; 
-        int fps = ParsePositive(tbFps.Text, 20);
+        int cache = ParsePositive(tbCache.Text, 20);
         int previewSecs = ParsePositive(tbPreviewSecs.Text, 2);
         int deadZone = ParsePositive(tbDeadZone.Text, 8);
         int sendInterval = ParsePositive(tbSendInterval.Text, 15);
-        bool autoConnect = chkAutoConnect.IsChecked == true;
         string newTheme = (cbTheme.SelectedIndex == 2) ? "ZA" : (cbTheme.SelectedIndex == 1) ? "Light" : "Dark";
 
         // 旧值
         var s = Properties.Settings.Default;
         string oldIP = s.SwitchIP ?? "";
         int oldPort = s.SwitchPort;
+        int oldRtspPort = s.RtspPort;
         int oldMode = s.StreamMode;
-        int oldFps = s.TargetFps;
+        int oldCache = s.RtspCache;
         int oldPreview = s.PreviewSecs;
         int oldDeadZone = s.DeadZonePx;
         int oldInterval = s.SendIntervalMs;
-        bool oldAuto = s.AutoConnect;
         string oldTheme = s.ThemeName ?? "Dark";
 
         // 比对是否有变化
         bool ipChanged = !string.Equals(oldIP, ip, StringComparison.OrdinalIgnoreCase);
         bool portChanged = oldPort != p;
+        bool rtspPortChanged = oldRtspPort != rp;
         bool modeChanged = oldMode != mode;
-        bool fpsChanged = oldFps != fps;
+        bool cacheChanged = oldCache != cache;
         bool previewChanged = oldPreview != previewSecs;
         bool deadZoneChanged = oldDeadZone != deadZone;
         bool intervalChanged = oldInterval != sendInterval;
-        bool autoChanged = oldAuto != autoConnect;
         bool themeChanged = !string.Equals(oldTheme, newTheme, StringComparison.OrdinalIgnoreCase);
 
-        bool anyChanged = ipChanged || portChanged || modeChanged || fpsChanged ||
-                          previewChanged || deadZoneChanged || intervalChanged ||
-                          autoChanged || themeChanged;
+        bool anyChanged = ipChanged || portChanged || modeChanged || cacheChanged || rtspPortChanged ||
+                          previewChanged || deadZoneChanged || intervalChanged || themeChanged;
 
         // 没变化就直接返回
         if (!anyChanged)
@@ -98,12 +102,12 @@ public partial class SettingsWindow : Window
         // 写入新值
         s.SwitchIP = ip;
         s.SwitchPort = p;
+        s.RtspPort = rp;
         s.StreamMode = mode;
-        s.TargetFps = fps;
+        s.RtspCache = cache;
         s.PreviewSecs = previewSecs;
         s.DeadZonePx = deadZone;
         s.SendIntervalMs = sendInterval;
-        s.AutoConnect = autoConnect;
         s.ThemeName = newTheme;
         s.Save();
 
@@ -161,12 +165,12 @@ public partial class SettingsWindow : Window
     {
         tbIp.Text = "192.168.0.0";
         tbPort.Text = "6000";
+        rtspPort.Text = "6666";
         cbStreamMode.SelectedIndex = 1;
-        tbFps.Text = "20";
+        tbCache.Text = "150";
         tbPreviewSecs.Text = "2";
         tbDeadZone.Text = "8";
         tbSendInterval.Text = "15";
-        chkAutoConnect.IsChecked = false;
         cbTheme.SelectedIndex = 0;
         RestartApp();
     }

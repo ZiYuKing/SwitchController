@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using LibVLCSharp.Shared;
+using Microsoft.Win32;
 using SwitchController.Properties;
 using SysBot.Base;
 using System.Diagnostics;
@@ -28,6 +29,8 @@ public partial class MainWindow : Window
     private static CancellationTokenSource? SOUR { get; set; }
     private CancellationTokenSource Source = new();
 
+    private LibVLC? _libVLC;
+    private LibVLCSharp.Shared.MediaPlayer? _mediaPlayer;
 
     private bool isHolding = false;
     private CancellationTokenSource holdToken;
@@ -56,11 +59,20 @@ public partial class MainWindow : Window
     private double _rightMaxDrag = 0;
 
     private byte[] _screenGrab = [];
+    private bool _rtspStreaming = false;
     public MainWindow()
     {
         InitializeComponent();
+        btnRtspRescue.Visibility = Settings.Default.StreamMode == 2 ? Visibility.Visible : Visibility.Collapsed;
         this.Loaded += (_, __) => LoadSettings();
         this.Closing += (_, __) => SaveSettings();
+
+        // 初始化 LibVLC
+        Core.Initialize();
+        _libVLC = new LibVLC();
+        _mediaPlayer = new LibVLCSharp.Shared.MediaPlayer(_libVLC);
+        VlcView.MediaPlayer = _mediaPlayer;
+
     }
 
     private void LoadSettings()
@@ -342,12 +354,6 @@ public partial class MainWindow : Window
         if (IsOverInteractive(e.OriginalSource as DependencyObject))
             return;
 
-        if (e.ClickCount == 2)
-        {
-            btnMaxRestore_Click(sender, new RoutedEventArgs());
-            return;
-        }
-
         try { DragMove(); } catch {  }
     }
 
@@ -369,13 +375,6 @@ public partial class MainWindow : Window
     private void btnMinimize_Click(object sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Minimized;
-    }
-
-    private void btnMaxRestore_Click(object sender, RoutedEventArgs e)
-    {
-        WindowState = (WindowState == WindowState.Maximized)
-            ? WindowState.Normal
-            : WindowState.Maximized;
     }
 
     private void btnClose_Click(object sender, RoutedEventArgs e)
@@ -443,7 +442,7 @@ public partial class MainWindow : Window
             await connectTask;
 
             if (!SwitchConnection.Connected)
-                throw new SocketException((int)System.Net.Sockets.SocketError.NotConnected);
+                throw new SocketException((int)SocketError.NotConnected);
 
             // 更新 UI
             Dispatcher.Invoke(() =>
@@ -463,9 +462,15 @@ public partial class MainWindow : Window
                     ? $"Switch | 已连接成功 | {id}"
                     : "Switch | 已连接成功 | 未启动游戏";
             });
-
+            // 操作预览
             StartScreenStream();
+            // 持续预览
             TriggerPreview(TimeSpan.FromSeconds(2));
+            // Rtsp播放
+            await Dispatcher.InvokeAsync(() =>
+            {
+                StartRtspStream($"rtsp://{txtIpAddress.Text}:{Settings.Default.RtspPort}/");
+            });
         }
         catch (OperationCanceledException)
         {
@@ -600,9 +605,9 @@ public partial class MainWindow : Window
     private CancellationTokenSource? _streamCts;
     private Task? _streamTask;
 
-    private void StartScreenStream()
+    private void StartScreenStream(bool force = false)
     {
-        if (Settings.Default.StreamMode != 0)
+        if (!force && Settings.Default.StreamMode != 0)
             return;
         StopScreenStream();
 
@@ -617,11 +622,59 @@ public partial class MainWindow : Window
         _streamCts = null;
     }
 
+    private void StartRtspStream(string url)
+    {
+        if (Settings.Default.StreamMode != 2)
+            return;
+        StopRtspStream();
+
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            MessageBox.Show("RTSP地址不能为空！");
+            return;
+        }
+
+        try
+        {
+            VlcView.Visibility = Visibility.Visible;
+            imgSwitchDisplay.Visibility = Visibility.Collapsed; // 隐藏抓屏图层
+            _rtspStreaming = true;
+
+            var m = new Media(_libVLC!, new Uri(url),
+                $":network-caching={Settings.Default.RtspCache}",  // 网络缓冲（150ms左右）
+                ":live-caching=0",       // 实时流额外缓冲禁用
+                ":clock-jitter=0",       // 不做时钟抖动补偿
+                ":clock-synchro=0",      // 不做音视频同步
+                ":no-audio"              // 🚫 彻底禁用音频解码
+            );
+            _mediaPlayer!.Play(m);
+        }
+        catch (Exception ex)
+        {
+            _rtspStreaming = false;
+            Dispatcher.Invoke(() =>
+            {
+                VlcView.Visibility = Visibility.Collapsed;
+                imgSwitchDisplay.Visibility = Visibility.Visible;
+                ellipseStatus.Fill = Brushes.Yellow;
+                txtStatus.Text = "RTSP 未连接";
+            });
+            MessageBox.Show($"RTSP连接失败：{ex.Message}");
+        }
+    }
+
+    private void StopRtspStream()
+    {
+        try { _mediaPlayer?.Stop(); } catch { }
+        VlcView.Visibility = Visibility.Collapsed;
+        imgSwitchDisplay.Visibility = Visibility.Visible;
+    }
+
     private async Task ScreenLoopAsync(CancellationToken token)
     {
-        var frameInterval = TimeSpan.FromMilliseconds(1000.0 / Settings.Default.TargetFps);
+        var frameInterval = TimeSpan.FromMilliseconds(1000.0 / Settings.Default.RtspCache);
 
-        while (!token.IsCancellationRequested && SwitchConnection?.Connected == true)
+        while (!token.IsCancellationRequested && SwitchConnection?.Connected == true && !_rtspStreaming)
         {
             var started = Stopwatch.StartNew();
             try
@@ -846,7 +899,6 @@ public partial class MainWindow : Window
 
     private void btnStopStream_Click(object sender, RoutedEventArgs e)
     {
-
         btnStopStream.IsEnabled = false;
         btnCapture.IsEnabled = false;
         btnStartStream.IsEnabled = true;
@@ -855,7 +907,7 @@ public partial class MainWindow : Window
         Source.Cancel();
         Source = new CancellationTokenSource();
         SOUR = Source;
-
+        StopRtspStream();
         Dispatcher.Invoke(() =>
         {
             txtLog.Text = "Switch | 已断开连接！！";
@@ -912,6 +964,25 @@ public partial class MainWindow : Window
                 MessageBox.Show("截图保存失败：" + ex.Message);
                 txtLog.Text = "截图保存失败。";
             });
+        }
+    }
+
+    private void btnRtspRescue_Click(object sender, RoutedEventArgs e)
+    {
+        if (_rtspStreaming)
+        {
+            _rtspStreaming = false;
+            VlcView.Visibility = Visibility.Collapsed;
+            imgSwitchDisplay.Visibility = Visibility.Visible;
+            btnRtspRescue.Content = "RTSP恢复";
+            StartScreenStream(true);
+        }
+        else
+        {
+            _rtspStreaming = true;
+            VlcView.Visibility = Visibility.Visible;
+            imgSwitchDisplay.Visibility = Visibility.Collapsed;
+            btnRtspRescue.Content = "RTSP救援";
         }
     }
 }
